@@ -2,6 +2,30 @@ import { createUser, loginUser } from "../services/authService.js";
 
 import { generateAccessToken } from "../utils/token.js";
 
+// --------------------------------------------------
+// COOKIE OPTIONS
+// --------------------------------------------------
+
+function getAuthCookieOptions() {
+  const isProduction = process.env.NODE_ENV === "production";
+
+  return {
+    httpOnly: true,
+
+    secure: isProduction,
+
+    sameSite: isProduction ? "none" : "lax",
+
+    path: "/",
+
+    maxAge: 24 * 60 * 60 * 1000,
+  };
+}
+
+// --------------------------------------------------
+// SIGNUP
+// --------------------------------------------------
+
 export async function signup(req, res, next) {
   try {
     const { name, email, password } = req.body;
@@ -21,6 +45,10 @@ export async function signup(req, res, next) {
   }
 }
 
+// --------------------------------------------------
+// LOGIN
+// --------------------------------------------------
+
 export async function login(req, res, next) {
   try {
     const { email, password } = req.body;
@@ -30,17 +58,17 @@ export async function login(req, res, next) {
       password,
     });
 
+    // ----------------------------------------------
+    // GENERATE JWT
+    // ----------------------------------------------
+
     const token = generateAccessToken(user);
 
-    res.cookie("access_token", token, {
-      httpOnly: true,
+    // ----------------------------------------------
+    // SET AUTH COOKIE
+    // ----------------------------------------------
 
-      secure: process.env.NODE_ENV === "production",
-
-      sameSite: "lax",
-
-      maxAge: 24 * 60 * 60 * 1000,
-    });
+    res.cookie("access_token", token, getAuthCookieOptions());
 
     return res.status(200).json({
       message: "Login successful",
@@ -51,17 +79,31 @@ export async function login(req, res, next) {
   }
 }
 
+// --------------------------------------------------
+// CURRENT USER
+// --------------------------------------------------
+
 export async function getCurrentUser(req, res) {
   return res.status(200).json({
     user: req.user,
   });
 }
 
+// --------------------------------------------------
+// LOGOUT
+// --------------------------------------------------
+
 export async function logout(req, res) {
+  const isProduction = process.env.NODE_ENV === "production";
+
   res.clearCookie("access_token", {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+
+    secure: isProduction,
+
+    sameSite: isProduction ? "none" : "lax",
+
+    path: "/",
   });
 
   return res.status(200).json({
