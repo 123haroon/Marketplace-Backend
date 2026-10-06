@@ -47,3 +47,4 @@ desktop.ini
 *.pem
 *.key
 *.crt
+*.dump
