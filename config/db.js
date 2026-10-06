@@ -1,4 +1,5 @@
 import { Sequelize } from "sequelize";
+import pg from "pg";
 import "dotenv/config";
 
 let sequelize;
@@ -10,6 +11,9 @@ let sequelize;
 if (process.env.DATABASE_URL) {
   sequelize = new Sequelize(process.env.DATABASE_URL, {
     dialect: "postgres",
+
+    // Important for Vercel
+    dialectModule: pg,
 
     logging: false,
 
@@ -43,6 +47,9 @@ else {
       port: Number(process.env.DB_PORT),
 
       dialect: "postgres",
+
+      // Important
+      dialectModule: pg,
 
       logging: false,
     },
