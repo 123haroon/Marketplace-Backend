@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import "dotenv/config";
 import cookieParser from "cookie-parser";
+
 import "./models/index.js";
 import sequelize from "./config/db.js";
 
@@ -16,16 +17,47 @@ const app = express();
 
 const PORT = Number(process.env.PORT) || 5000;
 
-const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
+// --------------------------------------------------
+// ALLOWED FRONTEND ORIGINS
+// --------------------------------------------------
 
-// -----------------------------
+const allowedOrigins = [
+  "http://localhost:3000",
+
+  process.env.FRONTEND_URL,
+
+  "https://market-place-frontend-olive.vercel.app",
+
+  "https://market-place-frontend-git-main-tech-ec6d.vercel.app",
+].filter(Boolean);
+
+// --------------------------------------------------
 // GLOBAL MIDDLEWARE
-// -----------------------------
+// --------------------------------------------------
 
 app.use(
   cors({
-    origin: FRONTEND_URL,
+    origin(origin, callback) {
+      // Allow Postman / server-to-server requests
+      // where Origin header is missing
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      console.error("Blocked CORS origin:", origin);
+
+      return callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
+
     credentials: true,
+
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+
+    allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
 
@@ -33,9 +65,9 @@ app.use(express.json());
 
 app.use(cookieParser());
 
-// -----------------------------
+// --------------------------------------------------
 // HEALTH
-// -----------------------------
+// --------------------------------------------------
 
 app.get("/api/health", (req, res) => {
   return res.status(200).json({
@@ -43,9 +75,9 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// -----------------------------
+// --------------------------------------------------
 // ROUTES
-// -----------------------------
+// --------------------------------------------------
 
 app.use("/api/auth", authRoutes);
 
@@ -55,12 +87,9 @@ app.use("/api/products", productRoutes);
 
 app.use("/api/orders", orderRoutes);
 
-app.use("/api/orders", orderRoutes);
-
-// -----------------------------
+// --------------------------------------------------
 // 404
-// Always after all routes
-// -----------------------------
+// --------------------------------------------------
 
 app.use((req, res) => {
   return res.status(404).json({
@@ -68,16 +97,15 @@ app.use((req, res) => {
   });
 });
 
-// -----------------------------
+// --------------------------------------------------
 // ERROR HANDLER
-// Always last
-// -----------------------------
+// --------------------------------------------------
 
 app.use(errorHandler);
 
-// -----------------------------
+// --------------------------------------------------
 // START SERVER
-// -----------------------------
+// --------------------------------------------------
 
 async function startServer() {
   try {
